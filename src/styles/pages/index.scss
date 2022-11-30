@@ -1,0 +1,28 @@
+body,
+canvas {
+  position: fixed;
+  width: 60rem;
+  height: 60rem;
+  top: 0;
+  left: 0;
+  z-index: 0;
+}
+
+canvas {
+  z-index: 0;
+}
+
+.ui {
+  position: absolute;
+  bottom: 0;
+  z-index: 10;
+  background-color: white;
+  width: 100%;
+  padding: 2.5rem;
+
+  button {
+    padding: 1.5 3rem;
+    background-color: black;
+    color: white;
+  }
+}
