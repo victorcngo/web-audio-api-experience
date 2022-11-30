@@ -1,2 +1,2 @@
 import './styles/main.scss'
-import './scripts/canvas'
+import './scripts/experience'

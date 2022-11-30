@@ -59,27 +59,29 @@ oscillator.connect(amp).connect(context.destination)
 /* Triangles */
 let shapes = []
 
-function drawTriangle(x, y, angle, scale, color, audioFrequency) {
-  ctx.save() // Save before we apply changes to context
-  ctx.beginPath()
-
+function drawShape(x, y, points, color, audioFrequency) {
+  const shape = new Path2D()
   const size = 100
 
+  ctx.save()
   ctx.translate(x, y)
-  ctx.rotate(angle)
-  ctx.scale(scale, scale)
+  // ctx.rotate(angle)
+  // ctx.scale(scale, scale)
 
-  ctx.moveTo(-size / 2, size / 2)
-  ctx.lineTo(0, -size / 2)
-  ctx.lineTo(size / 2, size / 2)
-  ctx.lineTo(-size / 2, size / 2)
+  shape.moveTo(-size / 2, size / 2)
+  shape.lineTo(0, -size / 2)
+  shape.lineTo(size / 2, size / 2)
+  shape.lineTo(-size / 2, size / 2)
 
-  ctx.closePath()
+  shape.closePath()
 
   ctx.fillStyle = color
 
-  ctx.fill()
-  ctx.restore() // Restores the content for the next creation
+  ctx.fill(shape)
+  ctx.restore()
+
+  shapes.push({ x, y })
+  console.log(shapes)
 
   // Audio
   let lfo = context.createOscillator()
@@ -121,11 +123,23 @@ function generate() {
   const randomScale = getRandomInterval(1, 1.5)
   const audioFrequency = yToFrequency(randomY)
 
-  drawTriangle(
+  drawShape(
     randomX,
     randomY,
-    randomAngle,
-    randomScale,
+    [
+      {
+        x: 0,
+        y: 20,
+      },
+      {
+        x: 30,
+        y: 0,
+      },
+      {
+        x: 70,
+        y: 45,
+      },
+    ],
     colors[randomColor],
     audioFrequency
   )
@@ -146,19 +160,66 @@ generateButton.addEventListener('click', () => {
   if (isCanvasBlank(canvas)) {
     generate()
   } else {
-    ctx.clearRect(0, 0, 600, 600)
-    ctx.fillRect(0, 0, 600, 600)
     generate()
   }
 })
 
 /* Drag & drop */
-// canvas.addEventListener('mousemove', (event) => {
-//   // Check whether point is inside circle
-//   const isPointInPath = ctx.isPointInPath(circle, event.offsetX, event.offsetY)
-//   ctx.fillStyle = isPointInPath ? 'green' : 'red'
 
-//   // Draw circle
-//   ctx.clearRect(0, 0, canvas.width, canvas.height)
-//   ctx.fill(circle)
-// })
+function handleMouseDown(e) {
+  e.preventDefault()
+  startX = parseInt(e.clientX - offsetX)
+  startY = parseInt(e.clientY - offsetY)
+  for (var i = 0; i < shapes.length; i++) {
+    define(shapes[i])
+    if (ctx.isPointInPath(startX, startY)) {
+      selectedShape = shapes[i]
+      isDown = true
+    }
+  }
+}
+
+function handleMouseUp(e) {
+  e.preventDefault()
+  isDown = false
+  selectedShape = null
+}
+
+function handleMouseOut(e) {
+  e.preventDefault()
+  isDown = false
+  selectedShape = null
+}
+
+function handleMouseMove(e) {
+  if (!isDown) {
+    return
+  }
+  e.preventDefault()
+  mouseX = parseInt(e.clientX - offsetX)
+  mouseY = parseInt(e.clientY - offsetY)
+  var dx = mouseX - startX
+  var dy = mouseY - startY
+  startX = mouseX
+  startY = mouseY
+
+  selectedShape.x += dx
+  selectedShape.y += dy
+  // drawAll()
+}
+
+canvas.addEventListener('mousedown', (e) => {
+  handleMouseDown(e)
+})
+
+canvas.addEventListener('mousemove', (e) => {
+  handleMouseMove(e)
+})
+
+canvas.addEventListener('mouseup', (e) => {
+  handleMouseUp(e)
+})
+
+canvas.addEventListener('mouseout', (e) => {
+  handleMouseOut(e)
+})
