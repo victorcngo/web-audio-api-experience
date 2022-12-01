@@ -1,3 +1,13 @@
+import { shape1Points } from './utils/shapes/shape1.js'
+import { shape2Points } from './utils/shapes/shape2.js'
+import { shape3Points } from './utils/shapes/shape3.js'
+import { shape4Points } from './utils/shapes/shape4.js'
+import { shape5Points } from './utils/shapes/shape5.js'
+
+import oscillators from 'web-audio-oscillators'
+import { shape5Points } from './utils/shapes/shape5.js'
+console.log(oscillators)
+
 /**
  * Canvas
  */
@@ -23,7 +33,7 @@ let scrollX = getElementOffset(canvas).scrollLeft
 let scrollY = getElementOffset(canvas).scrollTop
 
 let ctx = canvas.getContext('2d')
-ctx.fillStyle = '#F5F5EF'
+ctx.fillStyle = '#2b3a55'
 ctx.fillRect(0, 0, cw, ch)
 
 /**
@@ -57,6 +67,11 @@ function getElementOffset(el) {
  * Audio context
  */
 
+// Converts a position (x) between 0 and the max canvas width to a gain between 0 and 0.1
+function xToGain(x) {
+  return x / 6000
+}
+
 // Converts a position (y) between 0 and the max canvas height to a frequency between 32 and 523hz
 function yToFrequency(y) {
   return 491 - (y / 600) * 491 + 32
@@ -83,100 +98,90 @@ amp.gain.setValueAtTime(0.05, context.currentTime)
 const clearButton = document.querySelector('.clear')
 const addButton = document.querySelector('.add')
 
-// Array of colors
-const colors = ['#F62A6B', '#82F1D6', '#CF93DF']
-
 /* Add a shape */
+// Array of colors
+const colors = ['#CE7777', '#E8C4C4', '#F2E5E5', '#E1DCB3']
+
 addButton.addEventListener('click', () => {
-  const randomShape = getRandomIntFromInterval(1, 3)
+  const randomShape = getRandomIntFromInterval(1, 1)
   const randomColor = Math.floor(Math.random() * colors.length)
   const randomX = getRandomIntFromInterval(60, cw - 60)
   const randomY = getRandomIntFromInterval(90, ch - 90)
+  const audioGain = xToGain(randomX)
   const audioFrequency = yToFrequency(randomY)
 
-  // Triangle
+  // Buzz
+  // Aah
+  // Ooh
+  // Eeh
+
+  // Shape n°1
   if (randomShape === 1) {
     addShape(
       randomX,
       randomY,
-      [
-        {
-          x: 0,
-          y: 0,
-        },
-        {
-          x: 30,
-          y: 60,
-        },
-        {
-          x: -30,
-          y: 60,
-        },
-      ],
+      shape1Points,
       colors[randomColor],
       colors[randomColor],
+      audioGain,
       audioFrequency,
-      'triangle'
+      'bass4'
     )
   }
 
-  // Diamond
+  // Shape n°2
   if (randomShape === 2) {
     addShape(
       randomX,
       randomY,
-      [
-        {
-          x: 0,
-          y: 0,
-        },
-        {
-          x: 30,
-          y: 45,
-        },
-        {
-          x: 0,
-          y: 90,
-        },
-        {
-          x: -30,
-          y: 45,
-        },
-      ],
+      shape2Points,
       colors[randomColor],
       colors[randomColor],
+      audioGain,
       audioFrequency,
-      'sawtooth'
+      'organ'
     )
   }
 
-  // Square
+  // Shape n°3
   if (randomShape === 3) {
     addShape(
       randomX,
       randomY,
-      [
-        {
-          x: 0,
-          y: 0,
-        },
-        {
-          x: 60,
-          y: 0,
-        },
-        {
-          x: 60,
-          y: 60,
-        },
-        {
-          x: 0,
-          y: 60,
-        },
-      ],
+      shape3Points,
       colors[randomColor],
       colors[randomColor],
+      audioGain,
       audioFrequency,
-      'square'
+      'organ'
+    )
+  }
+
+  // Shape n°4
+  if (randomShape === 4) {
+    addShape(
+      randomX,
+      randomY,
+      shape4Points,
+      colors[randomColor],
+      colors[randomColor],
+      audioGain,
+      audioFrequency,
+      'organ'
+    )
+  }
+
+  // Shape n°5
+  if (randomShape === 5) {
+    addShape(
+      randomX,
+      randomY,
+      shape5Points,
+      colors[randomColor],
+      colors[randomColor],
+      audioGain,
+      audioFrequency,
+      'organ'
     )
   }
 
@@ -190,10 +195,10 @@ clearButton.addEventListener('click', () => {
   shapes = []
 
   // Stop every oscillator, then empty the array too
-  oscillators.map((child) => {
+  shapeOscillators.map((child) => {
     child.stop()
   })
-  oscillators = []
+  shapeOscillators = []
 })
 
 /* Utils */
@@ -201,23 +206,33 @@ clearButton.addEventListener('click', () => {
 let shapes = []
 let selectedShape = null
 
-// Store the oscillators
-let oscillators = []
+// Store the shapeOscillators
+let shapeOscillators = []
 
-function addShape(x, y, points, fill, stroke, audioFrequency, audioType) {
+function addShape(
+  x,
+  y,
+  points,
+  fill,
+  stroke,
+  audioGain,
+  audioFrequency,
+  audioType
+) {
+  // Create a dedicated gain
+  const amp = context.createGain()
+  amp.gain.linearRampToValueAtTime(audioGain, context.currentTime)
+
   // Create a dedicated oscillator
-  const oscillator = context.createOscillator()
+  const oscillator = oscillators[audioType](context)
   oscillator.frequency.linearRampToValueAtTime(
     audioFrequency,
     context.currentTime
   )
-  oscillator.type = audioType
+  // oscillator.type = audioType
   oscillator.connect(amp).connect(context.destination)
-  oscillator.start()
-  oscillators.push(oscillator)
-
-  // console.log(shapeOscillator)
-  // console.log(context)
+  oscillator.start(context.currentTime)
+  shapeOscillators.push(oscillator)
 
   // Push the shape inside an array
   shapes.push({
@@ -226,6 +241,7 @@ function addShape(x, y, points, fill, stroke, audioFrequency, audioType) {
     points: points,
     fill: fill,
     stroke: stroke,
+    amp: amp,
     oscillator: oscillator,
   })
 }
@@ -259,13 +275,13 @@ function drawAll() {
   ctx.clearRect(0, 0, cw, ch)
 
   // Clear stuff
-  if (shapes.length > 5) {
+  if (shapes.length > 10) {
     // Shift the shapes array
     shapes.shift()
 
     // Stop the unused oscillator, then shift the array too
-    oscillators[0].stop(context.currentTime + 0.5)
-    oscillators.shift()
+    shapeOscillators[0].stop(context.currentTime + 0.5)
+    shapeOscillators.shift()
   }
 
   // Draw all the shapes
@@ -323,6 +339,13 @@ function handleMouseMove(e) {
   selectedShape.y += deltaY
   drawAll()
 
+  let newAudioGain = xToGain(mouseX)
+
+  selectedShape.amp.gain.linearRampToValueAtTime(
+    newAudioGain,
+    context.currentTime + 0.1
+  )
+
   let newAudioFrequency = yToFrequency(mouseY)
 
   selectedShape.oscillator.frequency.linearRampToValueAtTime(
@@ -333,6 +356,7 @@ function handleMouseMove(e) {
 
 canvas.addEventListener('mousedown', (e) => {
   handleMouseDown(e)
+  console.log('pressed')
 })
 
 canvas.addEventListener('mousemove', (e) => {
