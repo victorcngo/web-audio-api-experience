@@ -1,5 +1,5 @@
-$background: #2b3a55;
-$stroke: #f2e5e5;
+$background: white;
+$stroke: black;
 
 body {
   width: 100%;
@@ -12,8 +12,6 @@ canvas {
   width: 60rem;
   height: 60rem;
   margin-top: 10rem;
-  border: 0.3rem solid $stroke;
-  border-radius: 1.2rem;
 }
 
 .ui {
@@ -41,8 +39,13 @@ canvas {
       transform: scale(0.98);
     }
 
-    &:first-of-type {
+    &:not(:last-of-type) {
       margin-right: 2rem;
+    }
+
+    &.toggled {
+      background-color: $stroke;
+      color: $background;
     }
   }
 }
