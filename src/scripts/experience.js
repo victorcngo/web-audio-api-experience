@@ -333,7 +333,6 @@ function handleMouseMove(e) {
 
 canvas.addEventListener('mousedown', (e) => {
   handleMouseDown(e)
-  console.log('Mouse is pressed')
 })
 
 canvas.addEventListener('mousemove', (e) => {
@@ -342,10 +341,8 @@ canvas.addEventListener('mousemove', (e) => {
 
 canvas.addEventListener('mouseup', (e) => {
   handleMouseUp(e)
-  console.log('Mouse is released')
 })
 
 canvas.addEventListener('mouseout', (e) => {
   handleMouseOut(e)
-  console.log('Mouse is outside the canvas')
 })
