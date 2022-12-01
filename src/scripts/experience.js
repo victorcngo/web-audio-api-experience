@@ -103,7 +103,7 @@ const addButton = document.querySelector('.add')
 const colors = ['#CE7777', '#E8C4C4', '#F2E5E5', '#E1DCB3']
 
 addButton.addEventListener('click', () => {
-  const randomShape = getRandomIntFromInterval(1, 1)
+  const randomShape = getRandomIntFromInterval(1, 5)
   const randomColor = Math.floor(Math.random() * colors.length)
   const randomX = getRandomIntFromInterval(60, cw - 60)
   const randomY = getRandomIntFromInterval(90, ch - 90)
@@ -125,7 +125,7 @@ addButton.addEventListener('click', () => {
       colors[randomColor],
       audioGain,
       audioFrequency,
-      'bass4'
+      'sine'
     )
   }
 
@@ -153,7 +153,7 @@ addButton.addEventListener('click', () => {
       colors[randomColor],
       audioGain,
       audioFrequency,
-      'organ'
+      'buzz'
     )
   }
 
@@ -167,7 +167,7 @@ addButton.addEventListener('click', () => {
       colors[randomColor],
       audioGain,
       audioFrequency,
-      'organ'
+      'eeh'
     )
   }
 
@@ -181,7 +181,7 @@ addButton.addEventListener('click', () => {
       colors[randomColor],
       audioGain,
       audioFrequency,
-      'organ'
+      'sine'
     )
   }
 
