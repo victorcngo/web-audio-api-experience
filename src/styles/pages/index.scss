@@ -1,14 +1,19 @@
+$background: #2b3a55;
+$stroke: #f2e5e5;
+
 body {
   width: 100%;
   height: 100%;
   text-align: center;
-  background-color: #F5F5EF;
+  background-color: $background;
 }
 
 canvas {
   width: 60rem;
   height: 60rem;
   margin-top: 10rem;
+  border: 0.3rem solid $stroke;
+  border-radius: 1.2rem;
 }
 
 .ui {
@@ -16,24 +21,24 @@ canvas {
   z-index: 10;
   padding: 2.5rem;
   display: flex;
+  color: $stroke;
 
   button {
     padding: 2rem 6rem;
-    font-family: 'InterTight';
     font-weight: bold;
     flex: 1;
     border-radius: 1.2rem;
-    border: 0.3rem solid black;
-    transition: ease-in-out;
+    border: 0.3rem solid $stroke;
+    transition: transform 0.2s cubic-bezier(0.075, 0.82, 0.165, 1);
+    text-transform: uppercase;
 
     &:hover {
-      background-color: black;
-      color: white;
-      border: 0.3rem solid black;
+      background-color: $stroke;
+      color: $background;
     }
 
     &:active {
-      transform: scale(0.99);
+      transform: scale(0.98);
     }
 
     &:first-of-type {
