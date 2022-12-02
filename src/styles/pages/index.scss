@@ -1,51 +1,48 @@
-$background: white;
-$stroke: black;
-
-body {
-  width: 100%;
-  height: 100%;
-  text-align: center;
-  background-color: $background;
-}
-
-canvas {
-  width: 60rem;
-  height: 60rem;
-  margin-top: 10rem;
-}
-
-.ui {
-  margin-top: 10rem;
-  z-index: 10;
-  padding: 2.5rem;
+@mixin ui {
+  width: 20rem;
   display: flex;
-  color: $stroke;
+  flex-direction: column;
+  // background-color: #2a2a34;
+  border: 0.3rem solid #2a2a34;
+  height: 60rem;
+  border-radius: 0.8rem;
+}
 
-  button {
-    padding: 2rem 6rem;
-    font-weight: bold;
-    flex: 1;
-    border-radius: 1.2rem;
-    border: 0.3rem solid $stroke;
-    transition: transform 0.2s cubic-bezier(0.075, 0.82, 0.165, 1);
-    text-transform: uppercase;
+#app {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  align-items: center;
+  justify-content: space-evenly;
 
-    &:hover {
-      background-color: $stroke;
-      color: $background;
+  .buttons {
+    order: 1;
+    @include ui();
+
+    .button {
+      &:hover {
+        color: white;
+      }
     }
+  }
 
-    &:active {
-      transform: scale(0.98);
-    }
+  canvas {
+    order: 2;
+    height: 60rem;
+  }
 
-    &:not(:last-of-type) {
-      margin-right: 2rem;
-    }
+  .options {
+    order: 3;
+    @include ui();
 
-    &.toggled {
-      background-color: $stroke;
-      color: $background;
+    .option {
+      &:hover {
+        color: white;
+      }
+
+      &.toggled {
+        color: white;
+      }
     }
   }
 }

@@ -15,10 +15,6 @@ import {
 const BaseAudioContext = window.AudioContext || window.webkitAudioContext
 const context = new BaseAudioContext()
 
-// Ampli
-const amp = context.createGain()
-amp.gain.setValueAtTime(0.05, context.currentTime)
-
 /**
  * Physics
  */
@@ -56,7 +52,7 @@ function init() {
       width: 600,
       height: 600,
       pixelRatio: 2,
-      background: '#EEEEEE',
+      background: '#1b1b21',
       wireframes: false,
     },
   })
@@ -71,38 +67,86 @@ function init() {
  */
 
 // Add a shape
-const addButton = document.querySelector('.add')
-const colors = ['#CE7777', '#E8C4C4', '#F2E5E5']
+const buttons = [...document.querySelectorAll('.button')]
+const options = [...document.querySelectorAll('.option')]
+const colors = ['#C69749', '#735F32', '#4E6C50']
 
-addButton.addEventListener('click', () => {
-  const randomShape = getRandomIntFromInterval(1, 3)
-  const randomColor = colors[Math.floor(Math.random() * colors.length)]
-  const randomX = getRandomIntFromInterval(1, 600)
-  const randomY = getRandomIntFromInterval(1, 600)
-  const randomWidth = getRandomIntFromInterval(50, 100)
-  const randomHeight = getRandomIntFromInterval(50, 100)
-  const audioGain = xToGain(randomX)
-  const audioFrequency = yToFrequency(randomY)
-  const audioType = 'sine'
+buttons.map((child) => {
+  child.addEventListener('click', (e) => {
+    let pattern
 
-  createShape(
-    randomX,
-    randomY,
-    randomWidth,
-    randomHeight,
-    randomColor,
-    audioGain,
-    audioFrequency,
-    audioType
-  )
+    if (e.target.classList.contains('button--rectangle')) {
+      pattern = 'rectangle'
+    } else if (e.target.classList.contains('button--triangle')) {
+      pattern = 'triangle'
+    } else {
+      pattern = 'circle'
+    }
 
-  // TODO: Handle the different shapes
-  // ...
+    const randomColor = colors[Math.floor(Math.random() * colors.length)]
+    const randomX = getRandomIntFromInterval(1, 600)
+    const randomY = getRandomIntFromInterval(1, 600)
+    const randomRadius = getRandomIntFromInterval(25, 50)
+    const randomWidth = getRandomIntFromInterval(50, 100)
+    const randomHeight = getRandomIntFromInterval(50, 100)
+    const randomRotation = getRandomIntFromInterval(0, 2 * Math.PI)
+
+    createShape(
+      pattern,
+      randomX,
+      randomY,
+      randomRadius,
+      randomWidth,
+      randomHeight,
+      randomColor,
+      randomRotation
+    )
+  })
 })
 
-const clearButton = document.querySelector('.clear')
-clearButton.addEventListener('click', () => {
-  removeShapes()
+let xGravityActive = false
+let yGravityActive = false
+let isMuted = false
+
+options.map((child) => {
+  child.addEventListener('click', (e) => {
+    // TODO: Refactor with a switch() here
+    if (!e.target.classList.contains('option--clear')) {
+      e.target.classList.toggle('toggled')
+    }
+
+    if (e.target.classList.contains('option--gravity-x')) {
+      if (xGravityActive) {
+        engine.gravity.x = 0
+      } else {
+        engine.gravity.x = 1
+      }
+      xGravityActive = !xGravityActive
+    } else if (e.target.classList.contains('option--gravity-y')) {
+      if (yGravityActive) {
+        engine.gravity.y = 0
+      } else {
+        engine.gravity.y = 1
+      }
+      yGravityActive = !yGravityActive
+    } else if (e.target.classList.contains('option--mute')) {
+      if (isMuted) {
+        items.map((child) => {
+          child.amp.gain.linearRampToValueAtTime(
+            xToGain(child.shape.position.x),
+            context.currentTime + 0.1
+          )
+        })
+      } else {
+        items.map((child) => {
+          child.amp.gain.linearRampToValueAtTime(0, context.currentTime + 0.1)
+        })
+      }
+      isMuted = !isMuted
+    } else {
+      removeShapes()
+    }
+  })
 })
 
 let lastClear = '(not given)'
@@ -123,24 +167,6 @@ function removeShapes() {
   })
 }
 
-/* Handle world gravity */
-const hlButton = document.querySelector('.high-low')
-let hlIsToggled = true
-
-hlButton.addEventListener('click', (e) => {
-  e.target.classList.toggle('toggled')
-  handleGravity()
-})
-
-function handleGravity() {
-  if (hlIsToggled) {
-    engine.gravity.y = 1
-  } else {
-    engine.gravity.y = -1
-  }
-  hlIsToggled = !hlIsToggled
-}
-
 /**
  * Shapes and audio
  */
@@ -149,14 +175,14 @@ let items = []
 
 /* Create a shape */
 function createShape(
+  pattern,
   randomX,
   randomY,
+  randomRadius,
   randomWidth,
   randomHeight,
   randomColor,
-  audioGain,
-  audioFrequency,
-  audioType
+  randomRotation
 ) {
   if (items.length >= 6) {
     // Remove the shape from the world, then shift the shapes array
@@ -165,25 +191,54 @@ function createShape(
     items.shift()
   }
 
+  let shape
+  let audioType
+
   // Create a dedicated shape
-  const shape = Bodies.rectangle(randomX, randomY, randomWidth, randomHeight, {
-    render: {
-      fillStyle: randomColor,
-      strokeStyle: randomColor,
-    },
-  })
+  if (pattern === 'rectangle') {
+    shape = Bodies.rectangle(randomX, randomY, randomWidth, randomHeight, {
+      chamfer: 4,
+      render: {
+        fillStyle: randomColor,
+        strokeStyle: randomColor,
+      },
+    })
+    audioType = 'buzz'
+  }
+
+  if (pattern === 'circle') {
+    shape = Bodies.circle(randomX, randomY, randomRadius, {
+      render: {
+        fillStyle: randomColor,
+        strokeStyle: randomColor,
+      },
+    })
+    audioType = 'bass'
+  }
+
+  if (pattern === 'triangle') {
+    shape = Bodies.polygon(randomX, randomY, 3, randomRadius, {
+      chamfer: 4,
+      render: {
+        fillStyle: randomColor,
+        strokeStyle: randomColor,
+      },
+    })
+    audioType = 'sine'
+  }
+
+  Matter.Body.rotate(shape, randomRotation)
 
   // Create a dedicated gain
   const amp = context.createGain()
-  amp.gain.linearRampToValueAtTime(audioGain, context.currentTime)
+  amp.gain.linearRampToValueAtTime(xToGain(randomX), context.currentTime)
 
   // Create a dedicated oscillator
   const oscillator = oscillators[audioType](context)
   oscillator.frequency.linearRampToValueAtTime(
-    audioFrequency,
+    yToFrequency(randomY),
     context.currentTime
   )
-  // oscillator.type = audioType
   oscillator.connect(amp).connect(context.destination)
   oscillator.start(context.currentTime)
 
@@ -204,12 +259,18 @@ function createShape(
 
 /* Prepare the experience */
 function setupWorld() {
-  clearWorld('Boxes')
-
-  let ground = Bodies.rectangle(300, 650, 600, 100, { isStatic: true })
-  let leftWall = Bodies.rectangle(-50, 300, 100, 600, { isStatic: true })
-  let rightwall = Bodies.rectangle(650, 300, 100, 600, { isStatic: true })
-  let ceiling = Bodies.rectangle(300, -50, 600, 100, { isStatic: true })
+  let ground = Bodies.rectangle(300, 650, 600, 100, {
+    isStatic: true,
+  })
+  let leftWall = Bodies.rectangle(-50, 300, 100, 600, {
+    isStatic: true,
+  })
+  let rightwall = Bodies.rectangle(650, 300, 100, 600, {
+    isStatic: true,
+  })
+  let ceiling = Bodies.rectangle(300, -50, 600, 100, {
+    isStatic: true,
+  })
 
   // Add edges
   Composite.add(engine.world, [ground, leftWall, rightwall, ceiling])
@@ -246,12 +307,12 @@ function setupWorld() {
  */
 
 function gameLoop() {
-  // Maybe ptimize this ?
+  // TODO: Ask if we can maybe optimize this ?
   items.map((child) => {
     let newAudioGain
     let newAudioFrequency
 
-    if (child.shape.speed > 0.05) {
+    if (child.shape.speed > 0.05 && !isMuted) {
       // Set new audio values
       newAudioGain = xToGain(child.shape.position.x)
       newAudioFrequency = yToFrequency(child.shape.position.y)
