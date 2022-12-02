@@ -1,5 +1,6 @@
 import Matter from 'matter-js'
 import oscillators from 'web-audio-oscillators'
+// import gsap from 'gsap'
 
 import {
   getRandomIntFromInterval,
@@ -41,7 +42,6 @@ function init() {
   engine = Engine.create()
   engine.gravity.x = 0
   engine.gravity.y = 0
-  // engine.enableSleeping = true
   world = engine.world
 
   // Renderer
@@ -52,7 +52,7 @@ function init() {
       width: 600,
       height: 600,
       pixelRatio: 2,
-      background: '#1b1b21',
+      background: '#E8F9FD',
       wireframes: false,
     },
   })
@@ -69,7 +69,7 @@ function init() {
 // Add a shape
 const buttons = [...document.querySelectorAll('.button')]
 const options = [...document.querySelectorAll('.option')]
-const colors = ['#C69749', '#735F32', '#4E6C50']
+const colors = ['#E97777', '#BCE29E', '#8FE3CF']
 
 buttons.map((child) => {
   child.addEventListener('click', (e) => {
@@ -82,6 +82,8 @@ buttons.map((child) => {
     } else {
       pattern = 'circle'
     }
+
+    console.log(e.target.parentElement)
 
     const randomColor = colors[Math.floor(Math.random() * colors.length)]
     const randomX = getRandomIntFromInterval(1, 600)
@@ -184,7 +186,7 @@ function createShape(
   randomColor,
   randomRotation
 ) {
-  if (items.length >= 6) {
+  if (items.length >= 10) {
     // Remove the shape from the world, then shift the shapes array
     Composite.remove(engine.world, items[0].shape)
     items[0].oscillator.stop(context.currentTime + 0.5)
@@ -227,6 +229,12 @@ function createShape(
     audioType = 'sine'
   }
 
+  // let obj = {
+  //   x: 0.001,
+  //   y: 0.001,
+  // }
+
+  // Matter.Body.scale(shape, obj.x, obj.y)
   Matter.Body.rotate(shape, randomRotation)
 
   // Create a dedicated gain
@@ -261,15 +269,27 @@ function createShape(
 function setupWorld() {
   let ground = Bodies.rectangle(300, 650, 600, 100, {
     isStatic: true,
+    render: {
+      visible: false,
+    },
   })
   let leftWall = Bodies.rectangle(-50, 300, 100, 600, {
     isStatic: true,
+    render: {
+      visible: false,
+    },
   })
   let rightwall = Bodies.rectangle(650, 300, 100, 600, {
     isStatic: true,
+    render: {
+      visible: false,
+    },
   })
   let ceiling = Bodies.rectangle(300, -50, 600, 100, {
     isStatic: true,
+    render: {
+      visible: false,
+    },
   })
 
   // Add edges
