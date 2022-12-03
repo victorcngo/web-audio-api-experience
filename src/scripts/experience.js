@@ -1,372 +1,358 @@
-import { shape1Points } from './utils/shapes/shape1.js'
-import { shape2Points } from './utils/shapes/shape2.js'
-import { shape3Points } from './utils/shapes/shape3.js'
-import { shape4Points } from './utils/shapes/shape4.js'
-import { shape5Points } from './utils/shapes/shape5.js'
-
+import Matter from 'matter-js'
 import oscillators from 'web-audio-oscillators'
-import { shape5Points } from './utils/shapes/shape5.js'
-console.log(oscillators)
+// import gsap from 'gsap'
 
-/**
- * Canvas
- */
-
-// Base setup
-let canvas = document.querySelector('.app-canvas')
-
-canvas.width = 600
-canvas.height = 600
-
-const cw = canvas.width
-const ch = canvas.height
-const cw2 = canvas.width / 2
-const ch2 = canvas.height / 2
-
-canvas.style.maxWidth = cw + 'px'
-canvas.style.maxHeight = ch + 'px'
-
-let canvasOffset = getElementOffset(canvas)
-let offsetX = getElementOffset(canvas).left
-let offsetY = getElementOffset(canvas).top
-let scrollX = getElementOffset(canvas).scrollLeft
-let scrollY = getElementOffset(canvas).scrollTop
-
-let ctx = canvas.getContext('2d')
-ctx.fillStyle = '#2b3a55'
-ctx.fillRect(0, 0, cw, ch)
-
-/**
- * Helpers
- */
-
-// Handles if the canvas is empty
-function isCanvasBlank(canvas) {
-  return !canvas
-    .getContext('2d')
-    .getImageData(0, 0, canvas.width, canvas.height)
-    .data.some((channel) => channel !== 0)
-}
-
-// Returns a random number between a min and a max value
-function getRandomIntFromInterval(min, max) {
-  return Math.floor(Math.random() * (max - min + 1) + min)
-}
-
-// Returns an element offset in pixels
-function getElementOffset(el) {
-  const rect = el.getBoundingClientRect()
-
-  return {
-    top: rect.top + window.pageYOffset,
-    left: rect.left + window.pageXOffset,
-  }
-}
+import {
+  getRandomIntFromInterval,
+  xToGain,
+  yToFrequency,
+} from './utils/functions/helpers'
 
 /**
  * Audio context
  */
 
-// Converts a position (x) between 0 and the max canvas width to a gain between 0 and 0.1
-function xToGain(x) {
-  return x / 6000
-}
-
-// Converts a position (y) between 0 and the max canvas height to a frequency between 32 and 523hz
-function yToFrequency(y) {
-  return 491 - (y / 600) * 491 + 32
-}
-
 // Setup the audio context
 const BaseAudioContext = window.AudioContext || window.webkitAudioContext
 const context = new BaseAudioContext()
 
-// const oscillator = context.createOscillator()
-// oscillator.frequency.value = 300
-// oscillator.type = 'sine'
-
-// Ampli
-const amp = context.createGain()
-amp.gain.setValueAtTime(0.05, context.currentTime)
-
 /**
- * Shapes and sounds
+ * Physics
  */
 
-/* Setup */
-// Get DOM buttons
-const clearButton = document.querySelector('.clear')
-const addButton = document.querySelector('.add')
+// Base
+let Engine = Matter.Engine,
+  Render = Matter.Render,
+  Runner = Matter.Runner,
+  Bodies = Matter.Bodies,
+  Composite = Matter.Composite,
+  Composites = Matter.Composites,
+  Constraint = Matter.Constraint,
+  MouseConstraint = Matter.MouseConstraint,
+  Mouse = Matter.Mouse,
+  Events = Matter.Events
 
-/* Add a shape */
-// Array of colors
-const colors = ['#CE7777', '#E8C4C4', '#F2E5E5', '#E1DCB3']
+let engine
+let render
+let runner
+let world
 
-addButton.addEventListener('click', () => {
-  const randomShape = getRandomIntFromInterval(1, 5)
-  const randomColor = Math.floor(Math.random() * colors.length)
-  const randomX = getRandomIntFromInterval(60, cw - 60)
-  const randomY = getRandomIntFromInterval(90, ch - 90)
-  const audioGain = xToGain(randomX)
-  const audioFrequency = yToFrequency(randomY)
+function init() {
+  // Engine
+  engine = Engine.create()
+  engine.gravity.x = 0
+  engine.gravity.y = 0
+  world = engine.world
 
-  // Buzz
-  // Aah
-  // Ooh
-  // Eeh
-
-  // Shape n°1
-  if (randomShape === 1) {
-    addShape(
-      randomX,
-      randomY,
-      shape1Points,
-      colors[randomColor],
-      colors[randomColor],
-      audioGain,
-      audioFrequency,
-      'sine'
-    )
-  }
-
-  // Shape n°2
-  if (randomShape === 2) {
-    addShape(
-      randomX,
-      randomY,
-      shape2Points,
-      colors[randomColor],
-      colors[randomColor],
-      audioGain,
-      audioFrequency,
-      'organ'
-    )
-  }
-
-  // Shape n°3
-  if (randomShape === 3) {
-    addShape(
-      randomX,
-      randomY,
-      shape3Points,
-      colors[randomColor],
-      colors[randomColor],
-      audioGain,
-      audioFrequency,
-      'buzz'
-    )
-  }
-
-  // Shape n°4
-  if (randomShape === 4) {
-    addShape(
-      randomX,
-      randomY,
-      shape4Points,
-      colors[randomColor],
-      colors[randomColor],
-      audioGain,
-      audioFrequency,
-      'eeh'
-    )
-  }
-
-  // Shape n°5
-  if (randomShape === 5) {
-    addShape(
-      randomX,
-      randomY,
-      shape5Points,
-      colors[randomColor],
-      colors[randomColor],
-      audioGain,
-      audioFrequency,
-      'sine'
-    )
-  }
-
-  drawAll()
-})
-
-clearButton.addEventListener('click', () => {
-  ctx.clearRect(0, 0, cw, ch)
-
-  // Empty the array of shapes
-  shapes = []
-
-  // Stop every oscillator, then empty the array too
-  shapeOscillators.map((child) => {
-    child.stop()
+  // Renderer
+  render = Render.create({
+    element: document.getElementById('app'),
+    engine: engine,
+    options: {
+      width: 600,
+      height: 600,
+      pixelRatio: 2,
+      background: '#E8F9FD',
+      wireframes: false,
+    },
   })
-  shapeOscillators = []
+
+  Render.run(render)
+  runner = Runner.create()
+  Runner.run(runner, engine)
+}
+
+/**
+ * Actions
+ */
+
+// Add a shape
+const buttons = [...document.querySelectorAll('.button')]
+const options = [...document.querySelectorAll('.option')]
+const colors = ['#E97777', '#BCE29E', '#8FE3CF']
+
+buttons.map((child) => {
+  child.addEventListener('click', (e) => {
+    let pattern
+
+    if (e.target.classList.contains('button--rectangle')) {
+      pattern = 'rectangle'
+    } else if (e.target.classList.contains('button--triangle')) {
+      pattern = 'triangle'
+    } else {
+      pattern = 'circle'
+    }
+
+    console.log(e.target.parentElement)
+
+    const randomColor = colors[Math.floor(Math.random() * colors.length)]
+    const randomX = getRandomIntFromInterval(1, 600)
+    const randomY = getRandomIntFromInterval(1, 600)
+    const randomRadius = getRandomIntFromInterval(25, 50)
+    const randomWidth = getRandomIntFromInterval(50, 100)
+    const randomHeight = getRandomIntFromInterval(50, 100)
+    const randomRotation = getRandomIntFromInterval(0, 2 * Math.PI)
+
+    createShape(
+      pattern,
+      randomX,
+      randomY,
+      randomRadius,
+      randomWidth,
+      randomHeight,
+      randomColor,
+      randomRotation
+    )
+  })
 })
 
-/* Utils */
-// Stores the shapes and handle the selected one
-let shapes = []
-let selectedShape = null
+let xGravityActive = false
+let yGravityActive = false
+let isMuted = false
 
-// Store the shapeOscillators
-let shapeOscillators = []
+options.map((child) => {
+  child.addEventListener('click', (e) => {
+    // TODO: Refactor with a switch() here
+    if (!e.target.classList.contains('option--clear')) {
+      e.target.classList.toggle('toggled')
+    }
 
-function addShape(
-  x,
-  y,
-  points,
-  fill,
-  stroke,
-  audioGain,
-  audioFrequency,
-  audioType
+    if (e.target.classList.contains('option--gravity-x')) {
+      if (xGravityActive) {
+        engine.gravity.x = 0
+      } else {
+        engine.gravity.x = 1
+      }
+      xGravityActive = !xGravityActive
+    } else if (e.target.classList.contains('option--gravity-y')) {
+      if (yGravityActive) {
+        engine.gravity.y = 0
+      } else {
+        engine.gravity.y = 1
+      }
+      yGravityActive = !yGravityActive
+    } else if (e.target.classList.contains('option--mute')) {
+      if (isMuted) {
+        items.map((child) => {
+          child.amp.gain.linearRampToValueAtTime(
+            xToGain(child.shape.position.x),
+            context.currentTime + 0.1
+          )
+        })
+      } else {
+        items.map((child) => {
+          child.amp.gain.linearRampToValueAtTime(0, context.currentTime + 0.1)
+        })
+      }
+      isMuted = !isMuted
+    } else {
+      removeShapes()
+    }
+  })
+})
+
+let lastClear = '(not given)'
+
+/* Clear the world */
+function clearWorld(exampleName) {
+  if (lastClear != exampleName) {
+    lastClear = exampleName
+    Matter.Composite.clear(engine.world, false)
+  }
+}
+
+/* Remove the shapes */
+function removeShapes() {
+  items.map((child) => {
+    child.oscillator.stop()
+    Composite.remove(engine.world, child.shape)
+  })
+}
+
+/**
+ * Shapes and audio
+ */
+
+let items = []
+
+/* Create a shape */
+function createShape(
+  pattern,
+  randomX,
+  randomY,
+  randomRadius,
+  randomWidth,
+  randomHeight,
+  randomColor,
+  randomRotation
 ) {
+  if (items.length >= 10) {
+    // Remove the shape from the world, then shift the shapes array
+    Composite.remove(engine.world, items[0].shape)
+    items[0].oscillator.stop(context.currentTime + 0.5)
+    items.shift()
+  }
+
+  let shape
+  let audioType
+
+  // Create a dedicated shape
+  if (pattern === 'rectangle') {
+    shape = Bodies.rectangle(randomX, randomY, randomWidth, randomHeight, {
+      chamfer: 4,
+      render: {
+        fillStyle: randomColor,
+        strokeStyle: randomColor,
+      },
+    })
+    audioType = 'buzz'
+  }
+
+  if (pattern === 'circle') {
+    shape = Bodies.circle(randomX, randomY, randomRadius, {
+      render: {
+        fillStyle: randomColor,
+        strokeStyle: randomColor,
+      },
+    })
+    audioType = 'bass'
+  }
+
+  if (pattern === 'triangle') {
+    shape = Bodies.polygon(randomX, randomY, 3, randomRadius, {
+      chamfer: 4,
+      render: {
+        fillStyle: randomColor,
+        strokeStyle: randomColor,
+      },
+    })
+    audioType = 'sine'
+  }
+
+  // let obj = {
+  //   x: 0.001,
+  //   y: 0.001,
+  // }
+
+  // Matter.Body.scale(shape, obj.x, obj.y)
+  Matter.Body.rotate(shape, randomRotation)
+
   // Create a dedicated gain
   const amp = context.createGain()
-  amp.gain.linearRampToValueAtTime(audioGain, context.currentTime)
+  amp.gain.linearRampToValueAtTime(xToGain(randomX), context.currentTime)
 
   // Create a dedicated oscillator
   const oscillator = oscillators[audioType](context)
   oscillator.frequency.linearRampToValueAtTime(
-    audioFrequency,
+    yToFrequency(randomY),
     context.currentTime
   )
-  // oscillator.type = audioType
   oscillator.connect(amp).connect(context.destination)
   oscillator.start(context.currentTime)
-  shapeOscillators.push(oscillator)
 
-  // Push the shape inside an array
-  shapes.push({
-    x: x,
-    y: y,
-    points: points,
-    fill: fill,
-    stroke: stroke,
-    amp: amp,
-    oscillator: oscillator,
-  })
-}
-
-function draw(shape) {
-  // Check all the points and draw each line starting from the first one
-  let x = shape.x
-  let y = shape.y
-  let points = shape.points
-  ctx.save()
-  ctx.beginPath()
-  ctx.moveTo(x + points[0].x, y + points[0].y)
-  for (let i = 1; i < points.length; i++) {
-    ctx.lineTo(x + points[i].x, y + points[i].y)
+  const item = {
+    shape,
+    amp,
+    oscillator,
   }
-  ctx.closePath()
-}
+  items.push(item)
 
-function fill(shape) {
-  // Fill and stroke
-  draw(shape)
-  ctx.fillStyle = shape.fill
-  // ctx.fill()
-  ctx.strokeStyle = shape.stroke
-  ctx.lineWidth = 3
-  ctx.stroke()
-  ctx.restore()
-}
-
-function drawAll() {
-  ctx.clearRect(0, 0, cw, ch)
-
-  // Clear stuff
-  if (shapes.length > 10) {
-    // Shift the shapes array
-    shapes.shift()
-
-    // Stop the unused oscillator, then shift the array too
-    shapeOscillators[0].stop(context.currentTime + 0.5)
-    shapeOscillators.shift()
-  }
-
-  // Draw all the shapes
-  for (let i = 0; i < shapes.length; i++) {
-    fill(shapes[i])
-  }
+  // Add the bodies to the world
+  Composite.add(engine.world, item.shape)
 }
 
 /**
- * Drag & drop
+ * Misc
  */
 
-let isDown = false
-let startX
-let startY
+/* Prepare the experience */
+function setupWorld() {
+  let ground = Bodies.rectangle(300, 650, 600, 100, {
+    isStatic: true,
+    render: {
+      visible: false,
+    },
+  })
+  let leftWall = Bodies.rectangle(-50, 300, 100, 600, {
+    isStatic: true,
+    render: {
+      visible: false,
+    },
+  })
+  let rightwall = Bodies.rectangle(650, 300, 100, 600, {
+    isStatic: true,
+    render: {
+      visible: false,
+    },
+  })
+  let ceiling = Bodies.rectangle(300, -50, 600, 100, {
+    isStatic: true,
+    render: {
+      visible: false,
+    },
+  })
 
-function handleMouseDown(e) {
-  e.preventDefault()
-  startX = parseInt(e.clientX - offsetX)
-  startY = parseInt(e.clientY - offsetY)
-  for (let i = 0; i < shapes.length; i++) {
-    draw(shapes[i])
-    if (ctx.isPointInPath(startX, startY)) {
-      selectedShape = shapes[i]
-      isDown = true
+  // Add edges
+  Composite.add(engine.world, [ground, leftWall, rightwall, ceiling])
+
+  /* Mouse control */
+  // Create the constraint
+  let mouse = Mouse.create(render.canvas),
+    mouseConstraint = MouseConstraint.create(engine, {
+      mouse: mouse,
+      constraint: {
+        render: {
+          visible: false,
+        },
+      },
+    })
+
+  const canvas = document.querySelector('canvas')
+
+  // Prevent item dragging from doing crazy stuff when hitting edges
+  canvas.addEventListener('mouseleave', (event) => {
+    mouseConstraint.mouse.mouseup(event)
+  })
+
+  Composite.add(world, mouseConstraint)
+
+  // Update the mouse in the render
+  render.mouse = mouse
+
+  Engine.update(engine)
+}
+
+/**
+ * Game loop
+ */
+
+function gameLoop() {
+  // TODO: Ask if we can maybe optimize this ?
+  items.map((child) => {
+    let newAudioGain
+    let newAudioFrequency
+
+    if (child.shape.speed > 0.05 && !isMuted) {
+      // Set new audio values
+      newAudioGain = xToGain(child.shape.position.x)
+      newAudioFrequency = yToFrequency(child.shape.position.y)
+
+      // Update gain and frequency based on x and y
+      child.amp.gain.linearRampToValueAtTime(
+        newAudioGain,
+        context.currentTime + 0.1
+      )
+      child.oscillator.frequency.value = newAudioFrequency
     }
-  }
+  })
+
+  requestAnimationFrame(gameLoop)
 }
 
-function handleMouseUp(e) {
-  e.preventDefault()
-  isDown = false
-  selectedShape = null
+gameLoop()
+
+// Wait for document to load everything
+window.onload = function () {
+  init()
+  setupWorld()
 }
-
-function handleMouseOut(e) {
-  e.preventDefault()
-  isDown = false
-  selectedShape = null
-}
-
-function handleMouseMove(e) {
-  if (!isDown) {
-    return
-  }
-  e.preventDefault()
-  mouseX = parseInt(e.clientX - offsetX)
-  mouseY = parseInt(e.clientY - offsetY)
-  let deltaX = mouseX - startX
-  let deltaY = mouseY - startY
-  startX = mouseX
-  startY = mouseY
-
-  selectedShape.x += deltaX
-  selectedShape.y += deltaY
-  drawAll()
-
-  let newAudioGain = xToGain(mouseX)
-
-  selectedShape.amp.gain.linearRampToValueAtTime(
-    newAudioGain,
-    context.currentTime + 0.1
-  )
-
-  let newAudioFrequency = yToFrequency(mouseY)
-
-  selectedShape.oscillator.frequency.linearRampToValueAtTime(
-    newAudioFrequency,
-    context.currentTime + 0.1
-  )
-}
-
-canvas.addEventListener('mousedown', (e) => {
-  handleMouseDown(e)
-  console.log('pressed')
-})
-
-canvas.addEventListener('mousemove', (e) => {
-  handleMouseMove(e)
-})
-
-canvas.addEventListener('mouseup', (e) => {
-  handleMouseUp(e)
-})
-
-canvas.addEventListener('mouseout', (e) => {
-  handleMouseOut(e)
-})
