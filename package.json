@@ -19,6 +19,7 @@
     "process": "^0.11.10"
   },
   "dependencies": {
+    "@parcel/transformer-css": "^2.8.0",
     "gsap": "^3.11.3",
     "matter-js": "^0.18.0",
     "web-audio-oscillators": "^1.0.4"
